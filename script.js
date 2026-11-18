@@ -140,15 +140,14 @@ function parsearCSV(texto) {
 }
 
 // URL de tu Google Apps Script (proxy de imágenes de Drive)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrNbdaj-2eznebn3g3rifJP2q5F4ha-touc9p7sJrMMscpGacXLwLcMwpyrk6Sz8FhZg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmLYkOx8q_kUrnLvSE1DDvwCEAfUhuKtmHHlixohdNjN6A_nUh9trWn7EoMCVvXRjvQ/exec';
 
 /**
- * Convierte un enlace de Google Drive a una URL que funcione en la web,
- * usando tu Google Apps Script como proxy para evitar CORS/hotlinking.
+ * Convierte un enlace de Google Drive en la URL del proxy de Apps Script.
+ * El proxy devuelve un data URL (base64) que el navegador puede mostrar.
  * Soporta:
  *   https://drive.google.com/file/d/ID/view
  *   https://drive.google.com/open?id=ID
- *   https://drive.google.com/uc?export=view&id=ID
  *   URL directa (se devuelve igual)
  */
 function convertirImagenDrive(url) {
@@ -173,6 +172,22 @@ function convertirImagenDrive(url) {
   if (!id) return url;
 
   return `${APPS_SCRIPT_URL}?id=${id}`;
+}
+
+/**
+ * Carga una imagen de Drive a través del proxy de Apps Script y la devuelve
+ * como data URL (base64) para evitar problemas de CORS en el navegador.
+ */
+async function cargarImagenDrive(urlProxy) {
+  try {
+    const respuesta = await fetch(urlProxy, { cache: 'no-cache' });
+    if (!respuesta.ok) throw new Error('Error al cargar imagen');
+    const texto = await respuesta.text();
+    return texto; // Ya viene como data:image/...;base64,...
+  } catch (error) {
+    console.error('Error cargando imagen de Drive:', error);
+    return null;
+  }
 }
 
 /**
@@ -300,11 +315,14 @@ function renderizar() {
     tarjeta.setAttribute('tabindex', '0');
     tarjeta.setAttribute('aria-label', `${v.marca} ${v.modelo} ${v.anio}`);
 
-    const imgPrincipal = v.imagen1 || 'https://via.placeholder.com/400x250?text=Sin+imagen';
+    const esDrive = v.imagen1 && v.imagen1.includes('script.google.com');
+    const imgPrincipal = esDrive
+      ? 'https://via.placeholder.com/400x250?text=Cargando...'
+      : (v.imagen1 || 'https://via.placeholder.com/400x250?text=Sin+imagen');
 
     tarjeta.innerHTML = `
       <div class="tarjeta-img">
-        <img src="${escapeHtml(imgPrincipal)}" alt="${escapeHtml(v.marca + ' ' + v.modelo)}" loading="lazy" onerror="this.src='https://via.placeholder.com/400x250?text=Sin+imagen'" />
+        <img src="${escapeHtml(imgPrincipal)}" alt="${escapeHtml(v.marca + ' ' + v.modelo)}" loading="lazy" data-src="${escapeHtml(v.imagen1 || '')}" onerror="this.src='https://via.placeholder.com/400x250?text=Sin+imagen'" />
         <span class="tarjeta-tipo">${escapeHtml(v.tipoRaw)}</span>
       </div>
       <div class="tarjeta-info">
@@ -331,6 +349,16 @@ function renderizar() {
     });
 
     grid.appendChild(tarjeta);
+
+    // Si es imagen de Drive, cargarla vía proxy (base64)
+    if (esDrive && v.imagen1) {
+      const imgEl = tarjeta.querySelector('img');
+      cargarImagenDrive(v.imagen1).then((dataUrl) => {
+        if (dataUrl) {
+          imgEl.src = dataUrl;
+        }
+      });
+    }
   });
 }
 
@@ -350,11 +378,24 @@ function abrirModal(v) {
   document.getElementById('modal-tipo').textContent = v.tipoRaw;
 
   const imgModal = document.getElementById('modal-img');
-  imgModal.src = v.imagen1 || 'https://via.placeholder.com/800x500?text=Sin+imagen';
+  const esDriveModal = v.imagen1 && v.imagen1.includes('script.google.com');
+
+  imgModal.src = esDriveModal
+    ? 'https://via.placeholder.com/800x500?text=Cargando...'
+    : (v.imagen1 || 'https://via.placeholder.com/800x500?text=Sin+imagen');
   imgModal.alt = `${v.marca} ${v.modelo}`;
   imgModal.onerror = function () {
     this.src = 'https://via.placeholder.com/800x500?text=Sin+imagen';
   };
+
+  // Si es imagen de Drive, cargarla vía proxy (base64)
+  if (esDriveModal && v.imagen1) {
+    cargarImagenDrive(v.imagen1).then((dataUrl) => {
+      if (dataUrl) {
+        imgModal.src = dataUrl;
+      }
+    });
+  }
 
   const btnWa = document.getElementById('modal-whatsapp');
   const textoWa = `Hola Bach Car, me interesa el ${v.marca} ${v.modelo} (${v.anio}) - ${v.color}. Precio: ${v.precio}`;

@@ -166,7 +166,11 @@ function convertirImagenDrive(url) {
   }
 
   if (!id) return url;
-  return `https://drive.usercontent.google.com/download?id=${id}&export=view&authuser=0`;
+
+  const directa = `https://drive.usercontent.google.com/download?id=${id}&export=view&authuser=0`;
+  // Google Drive bloquea cargar imágenes directamente en otros sitios (hotlinking/CORS).
+  // Usamos un proxy CORS para que se puedan ver en la web.
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(directa)}`;
 }
 
 /**

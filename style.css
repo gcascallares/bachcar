@@ -500,6 +500,59 @@ body {
   display: block;
 }
 
+.modal-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  background: rgba(211, 47, 47, 0.85);
+  border: none;
+  color: var(--blanco);
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.2s;
+}
+
+.modal-nav:hover {
+  background: var(--color-acento);
+}
+
+.modal-nav-prev {
+  left: 15px;
+}
+
+.modal-nav-next {
+  right: 15px;
+}
+
+.modal-nav:disabled {
+  background: rgba(0, 0, 0, 0.3);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.modal-contador {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--blanco);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 5;
+  pointer-events: none;
+}
+
 .modal-tipo {
   position: absolute;
   top: 16px;

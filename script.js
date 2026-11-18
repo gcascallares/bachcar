@@ -27,6 +27,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmLYkOx8q_kUr
    ========================================= */
 let vehiculos = [];
 let filtroActual = 'todos';
+let modalImgIndex = 0; // Índice de foto actual en el modal
 const cacheImagenes = new Map(); // Guarda data URLs ya descargadas para no repetir fetch
 
 /* =========================================
@@ -395,18 +396,46 @@ function abrirModal(v) {
 
   const imgModal = document.getElementById('modal-img');
   const modalGaleria = document.getElementById('modal-galeria');
+  const btnPrev = document.getElementById('modal-nav-prev');
+  const btnNext = document.getElementById('modal-nav-next');
+  const contador = document.getElementById('modal-contador');
+
   const imgsModal = [v.imagen1, v.imagen2, v.imagen3].filter(Boolean);
-  const esDriveModal = v.imagen1 && v.imagen1.includes('script.google.com');
+  modalImgIndex = 0;
 
-  imgModal.src = esDriveModal
-    ? 'https://via.placeholder.com/800x500?text=Cargando...'
-    : (v.imagen1 || 'https://via.placeholder.com/800x500?text=Sin+imagen');
-  imgModal.alt = `${v.marca} ${v.modelo}`;
-  imgModal.onerror = function () {
-    this.src = 'https://via.placeholder.com/800x500?text=Sin+imagen';
-  };
+  // Función para mostrar una imagen por índice
+  function mostrarImagen(index) {
+    if (index < 0) index = 0;
+    if (index >= imgsModal.length) index = imgsModal.length - 1;
+    modalImgIndex = index;
 
-  // Galería de miniaturas en el modal
+    const imgSrc = imgsModal[modalImgIndex];
+    const esDrive = imgSrc && imgSrc.includes('script.google.com');
+
+    imgModal.src = esDrive
+      ? 'https://via.placeholder.com/800x500?text=Cargando...'
+      : (imgSrc || 'https://via.placeholder.com/800x500?text=Sin+imagen');
+    imgModal.alt = `${v.marca} ${v.modelo} Foto ${modalImgIndex + 1}`;
+    contador.textContent = `${modalImgIndex + 1} / ${imgsModal.length}`;
+
+    // Habilitar/deshabilitar botones
+    btnPrev.disabled = modalImgIndex === 0;
+    btnNext.disabled = modalImgIndex === imgsModal.length - 1;
+
+    // Actualizar miniaturas
+    modalGaleria.querySelectorAll('.modal-thumb').forEach((t, i) => {
+      t.classList.toggle('activo', i === modalImgIndex);
+    });
+
+    // Cargar vía proxy si es Drive
+    if (esDrive && imgSrc) {
+      cargarImagenDrive(imgSrc).then((dataUrl) => {
+        if (dataUrl) imgModal.src = dataUrl;
+      });
+    }
+  }
+
+  // Construir galería de miniaturas
   if (modalGaleria) {
     if (imgsModal.length > 1) {
       modalGaleria.style.display = 'flex';
@@ -418,28 +447,14 @@ function abrirModal(v) {
                class="modal-thumb ${i === 0 ? 'activo' : ''}" 
                data-index="${i}" 
                alt="${escapeHtml(v.modelo)} ${i + 1}" 
-               style="opacity:${esDrive ? '0.6' : '1'}" />
+               style="opacity:${esDrive ? '0.6' : '1'}; cursor:pointer;" />
         `;
       }).join('');
 
-      // Click en miniatura del modal
       modalGaleria.querySelectorAll('.modal-thumb').forEach(thumb => {
         thumb.addEventListener('click', () => {
           const index = parseInt(thumb.dataset.index);
-          const imgSrc = imgsModal[index];
-          if (imgSrc && imgSrc.includes('script.google.com')) {
-            cargarImagenDrive(imgSrc).then(dataUrl => {
-              if (dataUrl) {
-                imgModal.src = dataUrl;
-                modalGaleria.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('activo'));
-                thumb.classList.add('activo');
-              }
-            });
-          } else {
-            imgModal.src = imgSrc || 'https://via.placeholder.com/800x500?text=Sin+imagen';
-            modalGaleria.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('activo'));
-            thumb.classList.add('activo');
-          }
+          mostrarImagen(index);
         });
       });
     } else {
@@ -447,14 +462,18 @@ function abrirModal(v) {
     }
   }
 
-  // Si es imagen de Drive, cargarla vía proxy (usa caché)
-  if (esDriveModal && v.imagen1) {
-    cargarImagenDrive(v.imagen1).then((dataUrl) => {
-      if (dataUrl) {
-        imgModal.src = dataUrl;
-      }
-    });
-  }
+  // Botones de navegación (onclick para no duplicar listeners al reabrir)
+  btnPrev.onclick = () => mostrarImagen(modalImgIndex - 1);
+  btnNext.onclick = () => mostrarImagen(modalImgIndex + 1);
+
+  // Mostrar/ocultar controles según cantidad de fotos
+  const tieneVarias = imgsModal.length > 1;
+  btnPrev.style.display = tieneVarias ? 'flex' : 'none';
+  btnNext.style.display = tieneVarias ? 'flex' : 'none';
+  contador.style.display = tieneVarias ? 'block' : 'none';
+
+  // Mostrar primera imagen
+  mostrarImagen(0);
 
   const btnWa = document.getElementById('modal-whatsapp');
   const textoWa = `Hola Bach Car, me interesa el ${v.marca} ${v.modelo} (${v.anio}) - ${v.color}. Precio: ${v.precio}`;

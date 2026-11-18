@@ -75,12 +75,20 @@ body {
   font-weight: 900;
   color: var(--color-texto);
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.logo-text span {
+.logo-b {
   color: var(--color-acento);
+  font-weight: 900;
 }
 
+.logo-car {
+  color: var(--color-texto);
+  font-weight: 900;
+}
 .nav-links {
   display: none;
   gap: 24px;

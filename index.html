@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bach Car | Concesionario de Autos, Motos y Camionetas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header / Navegación -->
+  <header class="header">
+    <div class="container nav">
+      <a href="#" class="logo" aria-label="Inicio de Bach Car">Bach<span>Car</span></a>
+      <button class="nav-toggle" aria-label="Abrir menú">☰</button>
+      <nav class="nav-links">
+        <a href="#inicio">Inicio</a>
+        <a href="#catalogo">Catálogo</a>
+        <a href="#nosotros">Nosotros</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section id="inicio" class="hero">
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <span class="badge">Concesionario Oficial</span>
+        <h1>Vehículos de calidad al mejor precio</h1>
+        <p>
+          En <strong>Bach Car</strong> encontrarás autos, motos y camionetas nuevas y usadas,
+          revisadas y listas para entregar. Explorá nuestro catálogo actualizado en tiempo real.
+        </p>
+        <div class="hero-actions">
+          <a href="#catalogo" class="btn btn-primary">Ver catálogo</a>
+          <a href="#contacto" class="btn btn-outline">Contactarnos</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80" alt="Autos en concesionario" class="hero-img" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Catálogo -->
+  <section id="catalogo" class="catalogo">
+    <div class="container">
+      <div class="section-header">
+        <h2>Nuestro Catálogo</h2>
+        <p>Autos • Motos • Camionetas</p>
+      </div>
+
+      <!-- Filtros -->
+      <div class="filtros" role="group" aria-label="Filtrar por tipo de vehículo">
+        <button class="filtro activo" data-tipo="todos">Todos</button>
+        <button class="filtro" data-tipo="auto">Autos</button>
+        <button class="filtro" data-tipo="moto">Motos</button>
+        <button class="filtro" data-tipo="camioneta">Camionetas</button>
+      </div>
+
+      <div class="contador" id="contador">Cargando vehículos...</div>
+
+      <!-- Grid de vehículos -->
+      <div class="grid" id="grid-vehiculos">
+        <!-- Se inyectan desde script.js -->
+      </div>
+
+      <!-- Mensaje si no hay resultados -->
+      <div class="vacío" id="mensaje-vacío" style="display:none;">
+        <p>No se encontraron vehículos con ese filtro.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal / Detalle del vehículo -->
+  <div class="modal" id="modal-vehiculo" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-fondo" id="modal-fondo"></div>
+    <div class="modal-contenido">
+      <button class="modal-cerrar" id="modal-cerrar" aria-label="Cerrar">✕</button>
+      <div class="modal-grid">
+        <div class="modal-imagen">
+          <img id="modal-img" src="" alt="" />
+          <div class="modal-tipo" id="modal-tipo"></div>
+        </div>
+        <div class="modal-info">
+          <h3 id="modal-titulo"></h3>
+          <div class="modal-datos">
+            <p><strong>Marca:</strong> <span id="modal-marca"></span></p>
+            <p><strong>Modelo:</strong> <span id="modal-modelo"></span></p>
+            <p><strong>Año:</strong> <span id="modal-anio"></span></p>
+            <p><strong>Color:</strong> <span id="modal-color"></span></p>
+            <p><strong>Tipo:</strong> <span id="modal-tipo-texto"></span></p>
+            <p id="modal-precio-fila"><strong>Precio:</strong> <span id="modal-precio"></span></p>
+          </div>
+          <p id="modal-descripcion" class="modal-descripcion"></p>
+          <div class="modal-acciones">
+            <a href="#" class="btn btn-primary btn-whatsapp" id="modal-whatsapp">Consultar por WhatsApp</a>
+            <a href="#" class="btn btn-outline">Más fotos</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nosotros -->
+  <section id="nosotros" class="nosotros">
+    <div class="container">
+      <h2>Sobre Bach Car</h2>
+      <p>
+        Somos un concesionario comprometido con la transparencia y la calidad. Todos nuestros
+        vehículos pasan por una revisión mecánica completa antes de ponerse a la venta.
+        Trabajamos con financiación y recibimos tu usado como parte de pago.
+      </p>
+    </div>
+  </section>
+
+  <!-- Contacto -->
+  <section id="contacto" class="contacto">
+    <div class="container">
+      <h2>Contacto</h2>
+      <div class="contacto-grid">
+        <div class="contacto-datos">
+          <p><strong>Dirección:</strong> Av. Siempre Viva 123, Ciudad</p>
+          <p><strong>Teléfono:</strong> +54 9 11 1234-5678</p>
+          <p><strong>Email:</strong> contacto@bachcar.com.ar</p>
+          <p><strong>Horario:</strong> Lunes a Viernes 9:00 - 18:00 hs</p>
+        </div>
+        <div class="contacto-mapa">
+          <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3284.682842801251!2d-58.3815662847574!3d-34.60372358043954!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcca31e03fe6bd%3A0x8360d4752ac6295e!2sObelisco%20de%20Buenos%20Aires!5e0!3m2!1ses-419!2sar!4v1" 
+            width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 Bach Car. Concesionario de Autos, Motos y Camionetas.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

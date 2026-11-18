@@ -139,8 +139,12 @@ function parsearCSV(texto) {
   return filas;
 }
 
+// URL de tu Google Apps Script (proxy de imágenes de Drive)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrNbdaj-2eznebn3g3rifJP2q5F4ha-touc9p7sJrMMscpGacXLwLcMwpyrk6Sz8FhZg/exec';
+
 /**
- * Convierte un enlace de Google Drive a una URL directa de imagen.
+ * Convierte un enlace de Google Drive a una URL que funcione en la web,
+ * usando tu Google Apps Script como proxy para evitar CORS/hotlinking.
  * Soporta:
  *   https://drive.google.com/file/d/ID/view
  *   https://drive.google.com/open?id=ID
@@ -152,6 +156,7 @@ function convertirImagenDrive(url) {
   url = url.trim();
   if (!url) return '';
 
+  // Si ya es una URL directa (no drive), la devolvemos igual
   if (!url.includes('drive.google.com')) {
     return url;
   }
@@ -167,10 +172,7 @@ function convertirImagenDrive(url) {
 
   if (!id) return url;
 
-  const directa = `https://drive.usercontent.google.com/download?id=${id}&export=view&authuser=0`;
-  // Google Drive bloquea cargar imágenes directamente en otros sitios (hotlinking/CORS).
-  // Usamos un proxy CORS para que se puedan ver en la web.
-  return `https://corsproxy.io/?url=${encodeURIComponent(directa)}`;
+  return `${APPS_SCRIPT_URL}?id=${id}`;
 }
 
 /**

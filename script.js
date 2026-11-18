@@ -3,22 +3,6 @@
    (HTML + CSS + JavaScript vanilla)
    ========================================= */
 
-/**
- * CONFIGURACIÓN
- * ------------------------------------------------------------------
- * 1. Publicá tu Google Sheet como "Cualquier persona con el enlace
- *    puede ver" (Archivo > Compartir > Cambiar a "Cualquier persona
- *    con el enlace" > Visor).
- * 2. Copiá el ID de la hoja de la URL. Ejemplo:
- *    https://docs.google.com/spreadsheets/d/1ABCxyZ.../edit
- *    El ID es: 1ABCxyZ...
- * 3. Pegá ese ID abajo en SHEET_ID.
- *
- * Columnas esperadas en la hoja (primera fila = encabezados):
- *   Marca, Modelo, Tipo, Año, Color, Precio, Imagen1, Imagen2, Imagen3, Descripcion
- *   (Tipo acepta: Auto, Moto, Camioneta)
- */
-
 const CONFIG = {
   // ID de tu Google Sheet de Bach Car
   SHEET_ID: '1gjS2UQK3kIl07KbO7c6Kz56oWzSrwk2-_vM4g-aOwos',
@@ -35,7 +19,8 @@ const CONFIG = {
   WHATSAPP: '5491112345678',
 };
 
-
+// URL de tu Google Apps Script (proxy de imágenes de Drive)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmLYkOx8q_kUrnLvSE1DDvwCEAfUhuKtmHHlixohdNjN6A_nUh9trWn7EoMCVvXRjvQ/exec';
 
 /* =========================================
    Estado
@@ -140,15 +125,13 @@ function parsearCSV(texto) {
   return filas;
 }
 
-// URL de tu Google Apps Script (proxy de imágenes de Drive)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxmLYkOx8q_kUrnLvSE1DDvwCEAfUhuKtmHHlixohdNjN6A_nUh9trWn7EoMCVvXRjvQ/exec';
-
 /**
- * Convierte un enlace de Google Drive en la URL del proxy de Apps Script.
+ * Convierte un enlace de Google Drive o un ID puro en la URL del proxy de Apps Script.
  * El proxy devuelve un data URL (base64) que el navegador puede mostrar.
  * Soporta:
  *   https://drive.google.com/file/d/ID/view
  *   https://drive.google.com/open?id=ID
+ *   ID puro: 1eRMqQW09C8tdqRnbdyPcNTgcqYVsqmii
  *   URL directa (se devuelve igual)
  */
 function convertirImagenDrive(url) {
@@ -156,8 +139,12 @@ function convertirImagenDrive(url) {
   url = url.trim();
   if (!url) return '';
 
-  // Si ya es una URL directa (no drive), la devolvemos igual
+  // Si ya es una URL directa (no drive y no parece ID), la devolvemos igual
   if (!url.includes('drive.google.com')) {
+    const esIdDrive = /^[a-zA-Z0-9_-]{25,}$/.test(url) && !url.includes(' ');
+    if (esIdDrive) {
+      return `${APPS_SCRIPT_URL}?id=${url}`;
+    }
     return url;
   }
 
@@ -177,12 +164,11 @@ function convertirImagenDrive(url) {
 
 /**
  * Carga una imagen de Drive a través del proxy de Apps Script y la devuelve
- * como data URL (base64) para evitar problemas de CORS en el navegador.
+ * como data URL (base64). Usa caché para no descargar dos veces la misma imagen.
  */
 async function cargarImagenDrive(urlProxy) {
   if (!urlProxy) return null;
 
-  // Si ya la tenemos en caché, la devolvemos sin hacer fetch
   if (cacheImagenes.has(urlProxy)) {
     return cacheImagenes.get(urlProxy);
   }
@@ -191,7 +177,7 @@ async function cargarImagenDrive(urlProxy) {
     const respuesta = await fetch(urlProxy, { cache: 'no-cache' });
     if (!respuesta.ok) throw new Error('Error al cargar imagen');
     const texto = await respuesta.text();
-    cacheImagenes.set(urlProxy, texto); // Guardamos en caché
+    cacheImagenes.set(urlProxy, texto);
     return texto;
   } catch (error) {
     console.error('Error cargando imagen de Drive:', error);
@@ -284,7 +270,7 @@ function mostrarError(mensaje) {
   if (grid) grid.style.display = 'none';
   if (mensajeVacio) {
     mensajeVacio.style.display = 'block';
-    mensajeVacio.innerHTML = `<p style="color:#f87171; font-weight:600; padding:40px; text-align:center;">${mensaje}</p>`;
+    mensajeVacio.innerHTML = `<p style="color:#d32f2f; font-weight:600; padding:40px; text-align:center;">${mensaje}</p>`;
   }
 }
 
@@ -324,15 +310,26 @@ function renderizar() {
     tarjeta.setAttribute('tabindex', '0');
     tarjeta.setAttribute('aria-label', `${v.marca} ${v.modelo} ${v.anio}`);
 
-    const esDrive = v.imagen1 && v.imagen1.includes('script.google.com');
-    const imgPrincipal = esDrive
+    // Armar array de imágenes disponibles
+    const imgs = [v.imagen1, v.imagen2, v.imagen3].filter(Boolean);
+
+    const esDrive1 = v.imagen1 && v.imagen1.includes('script.google.com');
+    const imgPrincipal = esDrive1
       ? 'https://via.placeholder.com/400x250?text=Cargando...'
       : (v.imagen1 || 'https://via.placeholder.com/400x250?text=Sin+imagen');
+
+    // Miniaturas para tarjeta (solo las que no sean la principal)
+    const miniaturasHtml = imgs.slice(1).map((img, i) => {
+      const esDrive = img.includes('script.google.com');
+      const src = esDrive ? 'https://via.placeholder.com/60x60?text=...' : (img || '');
+      return `<img src="${escapeHtml(src)}" data-src="${escapeHtml(img)}" class="thumb" data-index="${i + 1}" alt="${escapeHtml(v.modelo)} ${i + 2}" style="opacity:${esDrive ? '0.6' : '1'}" />`;
+    }).join('');
 
     tarjeta.innerHTML = `
       <div class="tarjeta-img">
         <img src="${escapeHtml(imgPrincipal)}" alt="${escapeHtml(v.marca + ' ' + v.modelo)}" loading="lazy" data-src="${escapeHtml(v.imagen1 || '')}" onerror="this.src='https://via.placeholder.com/400x250?text=Sin+imagen'" />
         <span class="tarjeta-tipo">${escapeHtml(v.tipoRaw)}</span>
+        ${imgs.length > 1 ? `<div class="tarjeta-galeria">${miniaturasHtml}</div>` : ''}
       </div>
       <div class="tarjeta-info">
         <h3 class="tarjeta-titulo">${escapeHtml(v.marca)} ${escapeHtml(v.modelo)}</h3>
@@ -359,15 +356,25 @@ function renderizar() {
 
     grid.appendChild(tarjeta);
 
-    // Si es imagen de Drive, cargarla vía proxy (base64)
-    if (esDrive && v.imagen1) {
-      const imgEl = tarjeta.querySelector('img');
+    // Cargar imagen principal si es Drive (usa caché)
+    if (esDrive1 && v.imagen1) {
+      const imgEl = tarjeta.querySelector('img:not(.thumb)');
       cargarImagenDrive(v.imagen1).then((dataUrl) => {
-        if (dataUrl) {
-          imgEl.src = dataUrl;
-        }
+        if (dataUrl) imgEl.src = dataUrl;
       });
     }
+
+    // Cargar miniaturas si son Drive (usa caché)
+    imgs.slice(1).forEach((img, idx) => {
+      if (img && img.includes('script.google.com')) {
+        const thumbEl = tarjeta.querySelector(`.thumb[data-index="${idx + 2}"]`);
+        if (thumbEl) {
+          cargarImagenDrive(img).then((dataUrl) => {
+            if (dataUrl) thumbEl.src = dataUrl;
+          });
+        }
+      }
+    });
   });
 }
 
@@ -387,6 +394,8 @@ function abrirModal(v) {
   document.getElementById('modal-tipo').textContent = v.tipoRaw;
 
   const imgModal = document.getElementById('modal-img');
+  const modalGaleria = document.getElementById('modal-galeria');
+  const imgsModal = [v.imagen1, v.imagen2, v.imagen3].filter(Boolean);
   const esDriveModal = v.imagen1 && v.imagen1.includes('script.google.com');
 
   imgModal.src = esDriveModal
@@ -397,7 +406,48 @@ function abrirModal(v) {
     this.src = 'https://via.placeholder.com/800x500?text=Sin+imagen';
   };
 
-  // Si es imagen de Drive, cargarla vía proxy (base64)
+  // Galería de miniaturas en el modal
+  if (modalGaleria) {
+    if (imgsModal.length > 1) {
+      modalGaleria.style.display = 'flex';
+      modalGaleria.innerHTML = imgsModal.map((img, i) => {
+        const esDrive = img && img.includes('script.google.com');
+        return `
+          <img src="${esDrive ? 'https://via.placeholder.com/50x50?text=...' : (img || '')}" 
+               data-src="${escapeHtml(img || '')}" 
+               class="modal-thumb ${i === 0 ? 'activo' : ''}" 
+               data-index="${i}" 
+               alt="${escapeHtml(v.modelo)} ${i + 1}" 
+               style="opacity:${esDrive ? '0.6' : '1'}" />
+        `;
+      }).join('');
+
+      // Click en miniatura del modal
+      modalGaleria.querySelectorAll('.modal-thumb').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+          const index = parseInt(thumb.dataset.index);
+          const imgSrc = imgsModal[index];
+          if (imgSrc && imgSrc.includes('script.google.com')) {
+            cargarImagenDrive(imgSrc).then(dataUrl => {
+              if (dataUrl) {
+                imgModal.src = dataUrl;
+                modalGaleria.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('activo'));
+                thumb.classList.add('activo');
+              }
+            });
+          } else {
+            imgModal.src = imgSrc || 'https://via.placeholder.com/800x500?text=Sin+imagen';
+            modalGaleria.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('activo'));
+            thumb.classList.add('activo');
+          }
+        });
+      });
+    } else {
+      modalGaleria.style.display = 'none';
+    }
+  }
+
+  // Si es imagen de Drive, cargarla vía proxy (usa caché)
   if (esDriveModal && v.imagen1) {
     cargarImagenDrive(v.imagen1).then((dataUrl) => {
       if (dataUrl) {

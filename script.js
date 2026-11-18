@@ -166,7 +166,7 @@ function convertirImagenDrive(url) {
   }
 
   if (!id) return url;
-  return `https://drive.google.com/uc?export=view&id=${id}`;
+  return `https://drive.usercontent.google.com/download?id=${id}&export=view&authuser=0`;
 }
 
 /**

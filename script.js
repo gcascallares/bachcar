@@ -42,6 +42,7 @@ const CONFIG = {
    ========================================= */
 let vehiculos = [];
 let filtroActual = 'todos';
+const cacheImagenes = new Map(); // Guarda data URLs ya descargadas para no repetir fetch
 
 /* =========================================
    Elementos del DOM
@@ -179,11 +180,19 @@ function convertirImagenDrive(url) {
  * como data URL (base64) para evitar problemas de CORS en el navegador.
  */
 async function cargarImagenDrive(urlProxy) {
+  if (!urlProxy) return null;
+
+  // Si ya la tenemos en caché, la devolvemos sin hacer fetch
+  if (cacheImagenes.has(urlProxy)) {
+    return cacheImagenes.get(urlProxy);
+  }
+
   try {
     const respuesta = await fetch(urlProxy, { cache: 'no-cache' });
     if (!respuesta.ok) throw new Error('Error al cargar imagen');
     const texto = await respuesta.text();
-    return texto; // Ya viene como data:image/...;base64,...
+    cacheImagenes.set(urlProxy, texto); // Guardamos en caché
+    return texto;
   } catch (error) {
     console.error('Error cargando imagen de Drive:', error);
     return null;
